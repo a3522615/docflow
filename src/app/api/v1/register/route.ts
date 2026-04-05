@@ -21,28 +21,26 @@ function generateAPIKey(): string {
 
 // 发送微信通知
 async function sendWechatNotification(email: string, apiKey: string) {
+  const title = encodeURIComponent('📢 DocFlow 新用户注册');
   const message = `🎉 新用户注册！
 
 📧 邮箱：${email}
 🔑 API密钥：${apiKey}
 
 快去联系用户！`;
+  const desp = encodeURIComponent(message);
 
   try {
     console.log('发送微信通知...');
-    const response = await fetch(`https://sctapi.ftqq.com/${SCKEY}.send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: '📢 DocFlow 新用户注册',
-        desp: message
-      })
-    });
+    // 使用GET请求，和测试链接一样的格式
+    const url = `https://sctapi.ftqq.com/${SCKEY}.send?title=${title}&desp=${desp}`;
+    const response = await fetch(url);
     
-    const result = await response.json();
+    const result = await response.text();
     console.log('Server酱响应:', result);
     
-    if (result.code === 0) {
+    // Server酱成功会返回 {"code":0,...}
+    if (result.includes('"code":0') || result.includes('"errno":0')) {
       console.log('微信通知发送成功');
       return true;
     } else {
@@ -69,7 +67,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. 检查邮箱是否已注册
-    for (const [key, data] of apiKeys.entries()) {
+    const existingEntries = Array.from(apiKeys.entries());
+    for (const [key, data] of existingEntries) {
       if (data.email === email) {
         return NextResponse.json({
           success: true,
